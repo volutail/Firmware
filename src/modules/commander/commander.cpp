@@ -1188,6 +1188,7 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_geofence_action = param_find("GF_ACTION");
 	param_t _param_disarm_land = param_find("COM_DISARM_LAND");
 	param_t _param_low_bat_act = param_find("COM_LOW_BAT_ACT");
+	param_t _param_of_rtl = param_find("COM_OF_RTL");
 
 	param_t _param_fmode_1 = param_find("COM_FLTMODE1");
 	param_t _param_fmode_2 = param_find("COM_FLTMODE2");
@@ -1277,6 +1278,7 @@ int commander_thread_main(int argc, char *argv[])
 	status.rc_signal_lost = true;
 	status_flags.offboard_control_signal_lost = true;
 	status.data_link_lost = true;
+	status.offboard_control_lost_rtl_timestamp = 0;
 
 	status_flags.condition_system_prearm_error_reported = false;
 	status_flags.condition_system_hotplug_timeout = false;
@@ -1531,6 +1533,7 @@ int commander_thread_main(int argc, char *argv[])
 	int32_t datalink_loss_timeout = 10;
 	float rc_loss_timeout = 0.5;
 	int32_t datalink_regain_timeout = 0;
+	float offboard_rtl_timeout = -1.0f;
 
 	int32_t geofence_action = 0;
 
@@ -1623,6 +1626,7 @@ int commander_thread_main(int argc, char *argv[])
 			param_get(_param_geofence_action, &geofence_action);
 			param_get(_param_disarm_land, &disarm_when_landed);
 			param_get(_param_low_bat_act, &low_bat_action);
+			param_get(_param_of_rtl, &offboard_rtl_timeout);
 
 			/* Autostart id */
 			param_get(_param_autostart_id, &autostart_id);
@@ -1671,6 +1675,13 @@ int commander_thread_main(int argc, char *argv[])
 		} else {
 			if (!status_flags.offboard_control_signal_lost) {
 				status_flags.offboard_control_signal_lost = true;
+				if (offboard_rtl_timeout < 0) {
+					status_flags.offboard_control_lost_rtl_timestamp = 0;
+
+				} else {
+					status_flags.offboard_control_lost_rtl_timestamp = hrt_absolute_time() +
+						(float)1e6 * offboard_rtl_timeout;
+				}
 				status_changed = true;
 			}
 		}
