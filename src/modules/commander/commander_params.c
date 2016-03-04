@@ -410,6 +410,9 @@ PARAM_DEFINE_INT32(COM_FLTMODE6, -1);
  * it will wait in LOITER before entering RTL. A value of 0 will make it go straight to RTL.
  *
  * @group Commander
+ * @unit second
  * @min -1
+ * @max 60
+ * @increment 1
  */
 PARAM_DEFINE_FLOAT(COM_OFFB_RTL, -1.0f);
