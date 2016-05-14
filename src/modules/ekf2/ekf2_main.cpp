@@ -536,8 +536,8 @@ void Ekf2::task_main()
 			ev_data.posNED(2) = ev.z;
 			Quaternion q(ev.q);
 			ev_data.quat = q;
-			ev_data.posErr = 0.01;  // XXX constant 1 cm for now for all axis all measurements. Replace with actual variance later
-			ev_data.angErr = 0.01;  // XXX some small value in radians. Replace with actual variance later
+			ev_data.posErr = 0.1;  // XXX constant 1 cm for now for all axis all measurements. Replace with actual variance later
+			ev_data.angErr = 0.1;  // XXX some small value in radians. Replace with actual variance later
 			_ekf.setExtVisionData(ev.timestamp_computer, &ev_data);
 		}
 
