@@ -576,7 +576,18 @@ struct log_RPL4_s {
 	float range_to_ground;
 };
 
-/* --- EKF2 REPLAY Part 4 --- */
+/* --- EKF2 REPLAY Part 5 --- */
+#define LOG_RPL5_MSG 58
+struct log_RPL5_s {
+	uint64_t time_ev_usec;
+	float x;
+	float y;
+	float z;
+	float yaw;
+};
+
+
+/* --- EKF2 REPLAY Part 6 --- */
 #define LOG_RPL6_MSG 59
 struct log_RPL6_s {
 	uint64_t timestamp;
@@ -586,7 +597,6 @@ struct log_RPL6_s {
 	float air_temperature_celsius;
 	float confidence;
 };
-
 
 
 /* --- CAMERA TRIGGER --- */
@@ -692,6 +702,7 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(RPL2, "QQLLiMMfffffffM", "Tpos,Tvel,lat,lon,alt,fix,nsats,eph,epv,sacc,v,vN,vE,vD,v_val"),
 	LOG_FORMAT(RPL3, "QffffIB", "Tflow,fx,fy,gx,gy,delT,qual"),
 	LOG_FORMAT(RPL4, "Qf", "Trng,rng"),
+	LOG_FORMAT(RPL5, "Qffff", "Tev,x,y,z,yaw"),
 	LOG_FORMAT(RPL6, "Qfffff", "Tasp,inAsp,trAsp,ufAsp,tpAsp,confAsp"),
 	LOG_FORMAT(LAND, "B", "Landed"),
 	LOG_FORMAT(LOAD, "f", "CPU"),

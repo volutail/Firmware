@@ -59,7 +59,9 @@
 #include <fstream>
 #include <sstream>
 
-#include <uORB/topics/ekf2_replay.h>
+#include <matrix/matrix/math.hpp>
+#include <mathlib/mathlib.h>
+
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -69,6 +71,7 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/optical_flow.h>
 #include <uORB/topics/distance_sensor.h>
+#include <uORB/topics/vision_position_estimate.h>
 
 #include <sdlog2/sdlog2_messages.h>
 
@@ -133,6 +136,7 @@ private:
 	orb_advert_t _landed_pub;
 	orb_advert_t _flow_pub;
 	orb_advert_t _range_pub;
+	orb_advert_t _ev_pub;
 
 	int _att_sub;
 	int _estimator_status_sub;
@@ -148,12 +152,14 @@ private:
 	struct vehicle_land_detected_s _land_detected;
 	struct optical_flow_s _flow;
 	struct distance_sensor_s _range;
+	struct vision_position_estimate_s _ev;
 
 	unsigned _message_counter; // counter which will increase with every message read from the log
 	unsigned _part1_counter_ref;		// this is the value of _message_counter when the part1 of the replay message is read (imu data)
 	bool _read_part2;				// indicates if part 2 of replay message has been read
 	bool _read_part3;
 	bool _read_part4;
+	bool _read_part5;
 
 	int _write_fd = -1;
 	px4_pollfd_struct_t _fds[1];
@@ -201,6 +207,7 @@ Ekf2Replay::Ekf2Replay(char *logfile) :
 	_landed_pub(nullptr),
 	_flow_pub(nullptr),
 	_range_pub(nullptr),
+	_ev_pub(nullptr),
 	_att_sub(-1),
 	_estimator_status_sub(-1),
 	_innov_sub(-1),
@@ -217,6 +224,7 @@ Ekf2Replay::Ekf2Replay(char *logfile) :
 	_read_part2(false),
 	_read_part3(false),
 	_read_part4(false),
+	_read_part5(false),
 	_write_fd(-1)
 {
 	// build the path to the log
@@ -263,6 +271,15 @@ void Ekf2Replay::publishEstimatorInput()
 	}
 
 	_read_part4 = false;
+
+	if (_ev_pub == nullptr && _read_part5) {
+		_ev_pub = orb_advertise(ORB_ID(vision_position_estimate), &_ev);
+
+	} else if (_ev_pub != nullptr && _read_part5) {
+		orb_publish(ORB_ID(vision_position_estimate), _ev_pub, &_ev);
+	}
+
+	_read_part5 = false;
 
 	if (_sensors_pub == nullptr) {
 		_sensors_pub = orb_advertise(ORB_ID(sensor_combined), &_sensors);
@@ -332,6 +349,7 @@ void Ekf2Replay::setEstimatorInput(uint8_t *data, uint8_t type)
 	struct log_RPL2_s replay_part2 = {};
 	struct log_RPL3_s replay_part3 = {};
 	struct log_RPL4_s replay_part4 = {};
+	struct log_RPL5_s replay_part5 = {};
 	struct log_LAND_s vehicle_landed = {};
 
 	if (type == LOG_RPL1_MSG) {
@@ -393,6 +411,29 @@ void Ekf2Replay::setEstimatorInput(uint8_t *data, uint8_t type)
 		_range.timestamp = replay_part4.time_rng_usec;
 		_range.current_distance = replay_part4.range_to_ground;
 		_read_part4 = true;
+
+	} else if (type == LOG_RPL5_MSG) {
+		uint8_t *dest_ptr = (uint8_t *)&replay_part5.time_ev_usec;
+		parseMessage(data, dest_ptr, type);
+		_ev.timestamp_boot = replay_part5.time_ev_usec;
+		_ev.timestamp_computer = replay_part5.time_ev_usec;
+		_ev.x = replay_part5.x;
+		_ev.y = replay_part5.y;
+		_ev.z = replay_part5.z;
+		// Convert yaw to quaternion. Beware roll and pitch information was 
+		// lost when we decided to only log the yaw (only yaw is fused in ecl).
+		// Set roll pitch to zero.
+		matrix::Euler<float> euler_init;
+		euler_init(0) = 0.0;
+		euler_init(0) = 0.0;
+		euler_init(2) = replay_part5.yaw;
+		matrix::Quaternion<float> q_init(euler_init);  // Ensure this back and forth convertion of heading is correct
+		_ev.q[0] = q_init(0);
+		_ev.q[1] = q_init(1);
+		_ev.q[2] = q_init(2);
+		_ev.q[3] = q_init(3);
+
+		_read_part5 = true;
 
 	} else if (type == LOG_LAND_MSG) {
 		uint8_t *dest_ptr = (uint8_t *)&vehicle_landed.landed;
