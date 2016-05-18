@@ -891,10 +891,10 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 					&& offb_loss_rc_act == 2) {
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
 
-				} else if (status_flags->condition_global_position_valid && offb_loss_rc_act == 0) {
+				} else if (status_flags->condition_global_position_valid && offb_loss_rc_act == 1) {
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
 
-				} else if (status_flags->condition_global_position_valid && offb_loss_rc_act == 1) {
+				} else if (status_flags->condition_global_position_valid && offb_loss_rc_act == 0) {
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
 
 				} else if (status_flags->condition_local_altitude_valid) {
