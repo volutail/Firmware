@@ -404,15 +404,13 @@ PARAM_DEFINE_INT32(COM_FLTMODE5, -1);
 PARAM_DEFINE_INT32(COM_FLTMODE6, -1);
 
 /**
- * Time-out to wait when offboard connection is lost to trigger RTL
- *
- * A negative value will trigger a landing where it is instead of RTL. A value greater than 0 is the time
- * it will wait in LOITER before entering RTL. A value of 0 will make it go straight to RTL.
+ * Time-out to wait when offboard connection is lost before triggering offboard lost action.
+ * See NAV_OBL_ACT and NAV_OBL_RC_ACT to configure action.
  *
  * @group Commander
  * @unit second
- * @min -1
+ * @min 0
  * @max 60
  * @increment 1
  */
-PARAM_DEFINE_FLOAT(COM_OFFB_RTL, -1.0f);
+PARAM_DEFINE_FLOAT(COM_OF_LOSS_T, 0.0f);
